@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.31"
+    "axios": "^1.7.2",
+    "base-64": "^1.0.0",
+    "vue": "^3.4.31",
+    "vue3-openlayers": "^10.0.2"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",

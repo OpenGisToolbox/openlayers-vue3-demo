@@ -1,39 +1,46 @@
 <script setup>
-import { ref } from 'vue'
+import {onMounted, ref} from 'vue'
+import GeoServerRestApi from "../geoserver/GeoServerRestApi.js";
 
-defineProps({
-  msg: String,
-})
+let manifest = ref(null);
+let status = ref(null);
+let system_status = ref(null);
+let version = ref(null);
 
-const count = ref(0)
+let layers = ref(null);
+
+onMounted(async () => {
+  let g = new GeoServerRestApi();
+
+  layers.value = await g.layers.getLayers();
+
+  [manifest.value,
+    status.value,
+    system_status.value,
+    version.value] = await Promise.all([g.about.getManifest(),
+    g.about.getStatus(),
+    g.about.getSystemStatus(),
+    g.about.getVersion()]);
+});
+
 </script>
 
 <template>
-  <h1>{{ msg }}</h1>
-
-  <div class="card">
-    <button type="button" @click="count++">count is {{ count }}</button>
-    <p>
-      Edit
-      <code>components/HelloWorld.vue</code> to test HMR
-    </p>
+  <h1>GeoServer</h1>
+  <div>
+    <h2>Layers</h2>
+    <div>{{ layers }}</div>
   </div>
-
-  <p>
-    Check out
-    <a href="https://vuejs.org/guide/quick-start.html#local" target="_blank"
-      >create-vue</a
-    >, the official Vue + Vite starter
-  </p>
-  <p>
-    Learn more about IDE Support for Vue in the
-    <a
-      href="https://vuejs.org/guide/scaling-up/tooling.html#ide-support"
-      target="_blank"
-      >Vue Docs Scaling up Guide</a
-    >.
-  </p>
-  <p class="read-the-docs">Click on the Vite and Vue logos to learn more</p>
+  <div class="read-the-docs">
+    <h2>Manifest</h2>
+    <pre>{{ manifest }}</pre>
+    <h2>Status</h2>
+    <pre>{{ status }}</pre>
+    <h2>System Status</h2>
+    <pre>{{ system_status }}</pre>
+    <h2>Version</h2>
+    <p>{{ version }}</p>
+  </div>
 </template>
 
 <style scoped>
