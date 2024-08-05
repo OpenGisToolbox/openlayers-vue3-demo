@@ -7,9 +7,10 @@ export default class Layers {
             if (response.status === 200) {
                 return response.data;
             } else {
-                throw new Error(JSON.stringify(response));
+                console.err(JSON.stringify(response));
             }
         } catch (error) {
+            console.err(error);
             throw error;
         }
     };

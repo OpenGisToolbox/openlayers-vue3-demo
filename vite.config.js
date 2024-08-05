@@ -3,9 +3,9 @@ import vue from '@vitejs/plugin-vue'
 import base64 from 'base-64'
 
 const AUTH = {user: "admin", pass: "geoserver"};
+const AUTH_BASE64 = base64.encode(`${AUTH.user}:${AUTH.pass}`);
 
-// https://vitejs.dev/config/
-export default defineConfig({
+defineConfig({
     plugins: [vue()],
     server: {
         proxy: {
@@ -14,7 +14,7 @@ export default defineConfig({
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
-                    Authorization: `Basic ${base64.encode(`${AUTH.user}:${AUTH.pass}`)}`,
+                    Authorization: `Basic ${AUTH_BASE64}`,
                 },
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/geoserver/, ""),
