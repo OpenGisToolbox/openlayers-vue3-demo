@@ -5,7 +5,7 @@ import base64 from 'base-64'
 const AUTH = {user: "admin", pass: "geoserver"};
 const AUTH_BASE64 = base64.encode(`${AUTH.user}:${AUTH.pass}`);
 
-defineConfig({
+export default defineConfig({
     plugins: [vue()],
     server: {
         proxy: {
