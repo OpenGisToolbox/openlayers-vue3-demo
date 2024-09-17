@@ -1,5 +1,5 @@
 <template>
-  <Map.OlMap ref="mapRef" :controls="[]" style="height: 400px">
+  <Map.OlMap id="map" ref="mapRef" :controls="[]">
     <Map.OlView
         ref="view"
         :center="center"
@@ -7,49 +7,77 @@
         :zoom="zoom"
     />
 
-    <Layers.OlTileLayer ref="jawgLayer" title="JAWG">
-      <Sources.OlSourceXyz
-          crossOrigin="anonymous"
-          url="https://c.tile.jawg.io/jawg-dark/{z}/{x}/{y}.png?access-token=87PWIbRaZAGNmYDjlYsLkeTVJpQeCfl2Y61mcHopxXqSdxXExoTLEv7dwqBwSWuJ"
-      />
-    </Layers.OlTileLayer>
-
-    <Layers.OlLayerGroup ref="layerGroup" title="Stadia Maps">
-      <Layers.OlTileLayer title="Stamen Watercolor">
-        <Sources.OlSourceStadiaMaps layer="stamen_watercolor"/>
-      </Layers.OlTileLayer>
-      <Layers.OlTileLayer title="Stamen Terrain Labels">
-        <Sources.OlSourceStadiaMaps layer="stamen_terrain_labels"/>
+    <Layers.OlLayerGroup v-for="group in dynamicLayerGroupList" :key="group.name" :title="group.name">
+      <Layers.OlTileLayer v-for="layer in group.layers" :key="layer.name" :title="layer.name">
+        <Sources.OlSourceTileWms :layers="layer.name" :url="layer.url" serverType="geoserver"/>
       </Layers.OlTileLayer>
     </Layers.OlLayerGroup>
 
-    <Layers.OlTileLayer title="OSM">
-      <Sources.OlSourceOsm/>
+    <Layers.OlTileLayer v-for="layer in dynamicLayerList" :key="layer.name" :title="layer.name">
+      <Sources.OlSourceTileWms :layers="layer.name" :url="layer.url" serverType="geoserver"/>
     </Layers.OlTileLayer>
 
-    <MapControls.OlLayerswitcherControl v-if="layerList.length > 0"/>
+    <MapControls.OlLayerswitcherControl/>
+
   </Map.OlMap>
 </template>
 
 <script lang="ts" setup>
 import {onMounted, ref} from "vue";
 import type MapRef from "ol/Map";
-import {Layers, Map, MapControls, Sources,} from "vue3-openlayers";
+import {Layers, Map, MapControls, Sources} from "vue3-openlayers";
+import GeoServerRestApi from '../geoserver/GeoServerRestApi';
 
 const center = ref([40, 40]);
 const projection = ref("EPSG:4326");
 const zoom = ref(8);
-const layerList = ref([]);
-const jawgLayer = ref(null);
-const layerGroup = ref(null);
+const dynamicLayerList = ref([]);
+const dynamicLayerGroupList = ref([]);
 const mapRef = ref<MapRef | null>(null);
 
-onMounted(() => {
-  layerList.value.push(jawgLayer.value.tileLayer);
-  layerList.value.push(layerGroup.value.layerGroup);
-});
+onMounted(async () => {
+  try {
+    let geoServerRestApi = new GeoServerRestApi();
+    let groups = await geoServerRestApi.layers.getLayerGroups();
+    for (let group of groups.layerGroups.layerGroup) {
+      let groupName = group.name;
+      let groupLayers = await geoServerRestApi.layers.getLayerGroup(groupName);
+      let layerGroups = {
+        name: groupName,
+        layers: [],
+      };
+      groupLayers.layerGroup.publishables.published.forEach((layer: any) => {
+        if (layer["@type"] !== "layer") return;
 
-onMounted(() => {
-  console.log(mapRef.value);
+        layerGroups.layers.push({
+          name: layer.name,
+          url: `/geoserver/wms`,
+        });
+      });
+      dynamicLayerGroupList.value.push(layerGroups);
+    }
+
+    let layers = await geoServerRestApi.layers.getLayers();
+    let layerList = layers.layers.layer;
+    layerList.forEach((layer: any) => {
+      let layerName = layer.name;
+      dynamicLayerList.value.push({
+        name: layerName,
+        url: `/geoserver/wms`,
+      });
+    });
+  } catch (error) {
+    console.error("Failed to load layers:", error);
+  }
 });
 </script>
+
+<style scoped>
+#map {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+</style>
